@@ -40,9 +40,7 @@
           }
         }
       ],
-      "expo-web-browser",
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
