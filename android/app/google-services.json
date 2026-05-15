@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "459432026776",
+    "project_id": "habyt-68e80",
+    "storage_bucket": "habyt-68e80.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:459432026776:android:d53c5aba962c187c36e6ed",
+        "android_client_info": {
+          "package_name": "com.atishk97.habyt"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEB8oDOSUZyHuFT2gDeh9wLFmKeCEd1fg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
