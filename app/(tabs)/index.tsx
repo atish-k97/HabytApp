@@ -37,6 +37,8 @@ import {
   useHaptic,
   WDAYS,
 } from "@/app/utils/shared";
+import { useAuth } from "@/app/utils/useAuth";
+import { useSyncHabits } from "@/app/utils/useSyncHabits";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
@@ -310,7 +312,7 @@ function ConfettiBlast({ onDone }: { onDone: () => void }) {
     Array.from({ length: 22 }, (_, i) => ({
       id: i,
       x: ((10 + Math.random() * 80) / 100) * SW,
-      color: ["#FF5A5A", "#FFD60A", "#64D2FF", "#BF5AF2", "#30D158", "#FF9500"][
+      color: ["#FF9500", "#FFD60A", "#64D2FF", "#BF5AF2", "#30D158", "#FF9500"][
         i % 6
       ],
       size: 4 + Math.random() * 6,
@@ -491,7 +493,7 @@ function StreakCelebration({
       <View
         style={{
           flex: 1,
-          backgroundColor: "#0A0F0B",
+          backgroundColor: "#0D0D0D",
           alignItems: "center",
           justifyContent: "center",
           paddingHorizontal: 36,
@@ -925,12 +927,12 @@ function HabitModal({
             padding: 14,
             borderRadius: 12,
             alignItems: "center",
-            backgroundColor: delConf ? "#FF3B30" : rgba("#FF3B30", 0.09),
+            backgroundColor: delConf ? "#E05555" : rgba("#E05555", 0.09),
           }}
         >
           <Text
             style={{
-              color: delConf ? "#fff" : "#FF3B30",
+              color: delConf ? "#fff" : "#E05555",
               fontSize: 13,
               fontWeight: "700",
             }}
@@ -1169,7 +1171,7 @@ function HabitModal({
                 padding: 13,
                 borderRadius: 12,
                 borderWidth: 1.5,
-                borderColor: nameError ? "#FF3B30" : name ? t.accent : t.border,
+                borderColor: nameError ? "#E05555" : name ? t.accent : t.border,
                 backgroundColor: t.bg2,
                 color: t.text,
                 fontSize: 16,
@@ -1180,7 +1182,7 @@ function HabitModal({
             {nameError && (
               <Text
                 style={{
-                  color: "#FF3B30",
+                  color: "#E05555",
                   fontSize: 12,
                   marginBottom: 16,
                   marginLeft: 2,
@@ -1714,6 +1716,200 @@ function HabitModal({
   );
 }
 
+// ─── HabitCircle ──────────────────────────────────────────────────────────────
+function HabitCircle({
+  h,
+  done,
+  failed,
+  streak,
+  progress,
+  CIRCLE,
+  SW_RING,
+  circleBg,
+  ringBg,
+  ringFg,
+  iconColor,
+  countColor,
+  labelColor,
+  shadowColor,
+  t,
+  onPress,
+  onLongPress,
+  contextMenu,
+}: {
+  h: Habit;
+  done: boolean;
+  failed: boolean;
+  streak: number;
+  progress: number;
+  CIRCLE: number;
+  SW_RING: number;
+  circleBg: string;
+  ringBg: string;
+  ringFg: string;
+  iconColor: string;
+  countColor: string;
+  labelColor: string;
+  shadowColor: string;
+  t: Theme;
+  onPress: () => void;
+  onLongPress: () => void;
+  contextMenu?: React.ReactNode;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const LABEL_H = 20;
+
+  const onPressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.88,
+      useNativeDriver: true,
+      damping: 15,
+      stiffness: 400,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      damping: 12,
+      stiffness: 300,
+    }).start();
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      activeOpacity={1}
+      style={{ width: CIRCLE, alignItems: "center" }}
+    >
+      <Animated.View
+        style={{
+          width: CIRCLE,
+          height: CIRCLE,
+          alignItems: "center",
+          justifyContent: "center",
+          transform: [{ scale }],
+        }}
+      >
+        {/* Filled circle */}
+        <View
+          style={{
+            position: "absolute",
+            width: CIRCLE - SW_RING * 2,
+            height: CIRCLE - SW_RING * 2,
+            borderRadius: (CIRCLE - SW_RING * 2) / 2,
+            backgroundColor: circleBg,
+            shadowColor: shadowColor,
+            shadowOffset: { width: 0, height: done ? 6 : 3 },
+            shadowOpacity: done ? 0.45 : 0.2,
+            shadowRadius: done ? 10 : 6,
+            elevation: done ? 8 : 3,
+          }}
+        />
+        {/* Progress ring */}
+        <ProgressRing
+          size={CIRCLE}
+          progress={done || h.type === "count" ? progress : 0}
+          color={ringFg}
+          strokeWidth={SW_RING}
+          bg={ringBg}
+        />
+        {/* Icon */}
+        <HabitIcon name={h.icon} size={CIRCLE * 0.36} color={iconColor} />
+        {/* Count / streak */}
+        {h.type === "count" ? (
+          <Text
+            style={{
+              fontSize: CIRCLE * 0.09,
+              fontWeight: "800",
+              letterSpacing: -0.3,
+              marginTop: 2,
+              color: countColor,
+            }}
+          >
+            {h.counts?.[today()] || 0}/{h.targetCount || 8}
+          </Text>
+        ) : (
+          <Text
+            style={{
+              fontSize: CIRCLE * 0.09,
+              fontWeight: "800",
+              letterSpacing: -0.3,
+              marginTop: 2,
+              color: countColor,
+            }}
+          >
+            {streak > 0 ? `${streak}d` : "—"}
+          </Text>
+        )}
+        {/* Done badge */}
+        {done && (
+          <View
+            style={{
+              position: "absolute",
+              top: SW_RING * 0.2,
+              right: SW_RING * 0.2,
+              width: CIRCLE * 0.24,
+              height: CIRCLE * 0.24,
+              borderRadius: CIRCLE * 0.12,
+              backgroundColor: "#4CAF50",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MaterialCommunityIcons
+              name="check"
+              size={CIRCLE * 0.13}
+              color="#fff"
+            />
+          </View>
+        )}
+        {failed && (
+          <View
+            style={{
+              position: "absolute",
+              top: SW_RING * 0.2,
+              right: SW_RING * 0.2,
+              width: CIRCLE * 0.24,
+              height: CIRCLE * 0.24,
+              borderRadius: CIRCLE * 0.12,
+              backgroundColor: "#E05555",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MaterialCommunityIcons
+              name="close"
+              size={CIRCLE * 0.13}
+              color="#fff"
+            />
+          </View>
+        )}
+      </Animated.View>
+      <Text
+        numberOfLines={1}
+        style={{
+          height: LABEL_H,
+          lineHeight: LABEL_H,
+          fontSize: 12,
+          fontWeight: "700",
+          textAlign: "center",
+          marginTop: 6,
+          paddingHorizontal: 4,
+          color: labelColor,
+        }}
+      >
+        {h.name}
+      </Text>
+      {contextMenu}
+    </TouchableOpacity>
+  );
+}
+
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
 function HomeScreen({
   t,
@@ -1725,6 +1921,7 @@ function HomeScreen({
   onAdd,
   onEdit,
   onAnalytics,
+  onSettings,
   confetti,
   celebrate,
   onConfettiDone,
@@ -1739,6 +1936,7 @@ function HomeScreen({
   onAdd: () => void;
   onEdit: (h: Habit) => void;
   onAnalytics: () => void;
+  onSettings: () => void;
   confetti: boolean;
   celebrate: number | null;
   onConfettiDone: () => void;
@@ -1746,6 +1944,7 @@ function HomeScreen({
 }) {
   const insets = useSafeAreaInsets();
   const haptic = useHaptic();
+  const [contextHabit, setContextHabit] = useState<Habit | null>(null);
   const HPAD = 24,
     GAP_H = 20,
     LABEL_H = 20,
@@ -1774,6 +1973,8 @@ function HomeScreen({
             justifyContent: "space-between",
             paddingHorizontal: 24,
             height: 56,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: t.border,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -1810,6 +2011,26 @@ function HomeScreen({
                 color={t.text2}
               />
             </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onSettings}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                backgroundColor: t.bg2,
+                borderWidth: 1,
+                borderColor: t.border,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MaterialCommunityIcons
+                name="cog-outline"
+                size={17}
+                color={t.text2}
+              />
+            </TouchableOpacity>
             <ThemeToggle isDark={isDark} onToggle={onToggle} />
           </View>
         </View>
@@ -1823,11 +2044,11 @@ function HomeScreen({
           <Text
             numberOfLines={2}
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontStyle: "italic",
-              color: t.text3,
+              color: t.text2,
               letterSpacing: 0.1,
-              lineHeight: 16,
+              lineHeight: 18,
             }}
           >
             "{quoteText}"
@@ -1879,8 +2100,8 @@ function HomeScreen({
                       borderRadius: CIRCLE / 2,
                       borderWidth: 2,
                       borderStyle: "dashed",
-                      borderColor: rgba(t.accent, 0.3),
-                      backgroundColor: rgba(t.accent, 0.04),
+                      borderColor: rgba(t.accent, 0.4),
+                      backgroundColor: rgba(t.accent, 0.06),
                       alignItems: "center",
                       justifyContent: "center",
                     }}
@@ -1888,7 +2109,7 @@ function HomeScreen({
                     <MaterialCommunityIcons
                       name="plus"
                       size={CIRCLE * 0.3}
-                      color={rgba(t.accent, 0.45)}
+                      color={rgba(t.accent, 0.6)}
                     />
                   </View>
                   <Text
@@ -1916,143 +2137,86 @@ function HomeScreen({
                 : done
                   ? ringProgress(h)
                   : 0;
+
+            // Strip red family from habit color — red is reserved for failures only
+            const isRed = (c: string) => {
+              const r = parseInt(c.slice(1, 3), 16),
+                g = parseInt(c.slice(3, 5), 16),
+                b = parseInt(c.slice(5, 7), 16);
+              return r > 180 && g < 120 && b < 120;
+            };
+            const safeHabitColor = isRed(h.color) ? "#FF9500" : h.color;
+
+            // State drives background
+            const circleBg = done
+              ? t.isDark
+                ? "rgba(74,175,80,0.18)"
+                : "rgba(74,175,80,0.15)"
+              : failed
+                ? t.isDark
+                  ? "rgba(224,85,85,0.18)"
+                  : "rgba(224,85,85,0.12)"
+                : t.isDark
+                  ? "rgba(255,255,255,0.06)"
+                  : "rgba(0,0,0,0.06)";
+
+            const ringBg = rgba(safeHabitColor, t.isDark ? 0.12 : 0.1);
+            const ringFg = failed ? "#E05555" : safeHabitColor;
+            const ringProgress2 = done || h.type === "count" ? progress : 0;
+            const iconColor = failed ? "#E05555" : safeHabitColor;
+            const countColor = done
+              ? "#4CAF50"
+              : failed
+                ? "#E05555"
+                : safeHabitColor;
+            const labelColor = done ? "#4CAF50" : failed ? "#E05555" : t.text;
+            const shadowColor = done
+              ? "#4CAF50"
+              : failed
+                ? "#E05555"
+                : safeHabitColor;
+
             return (
-              <TouchableOpacity
+              <HabitCircle
                 key={h.id}
+                h={h}
+                done={done}
+                failed={failed}
+                streak={streak}
+                progress={ringProgress2}
+                CIRCLE={CIRCLE}
+                SW_RING={SW_RING}
+                circleBg={circleBg}
+                ringBg={ringBg}
+                ringFg={ringFg}
+                iconColor={iconColor}
+                countColor={countColor}
+                labelColor={labelColor}
+                shadowColor={shadowColor}
+                t={t}
                 onPress={() => onToggleToday(h.id)}
                 onLongPress={() => {
                   haptic("medium");
-                  onEdit(h);
+                  setContextHabit(contextHabit?.id === h.id ? null : h);
                 }}
-                activeOpacity={0.75}
-                style={{ width: CIRCLE, alignItems: "center" }}
-              >
-                <View
-                  style={{
-                    width: CIRCLE,
-                    height: CIRCLE,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <View
-                    style={{
-                      position: "absolute",
-                      width: CIRCLE - SW_RING * 2,
-                      height: CIRCLE - SW_RING * 2,
-                      borderRadius: (CIRCLE - SW_RING * 2) / 2,
-                      backgroundColor: done
-                        ? rgba(h.color, 0.1)
-                        : failed
-                          ? rgba("#FF3B30", 0.05)
-                          : t.bg2,
-                    }}
-                  />
-                  <ProgressRing
-                    size={CIRCLE}
-                    progress={done || h.type === "count" ? progress : 0}
-                    color={
-                      h.type === "count"
-                        ? h.color
-                        : done
-                          ? h.color
-                          : failed
-                            ? "#FF3B30"
-                            : rgba(h.color, 0.2)
-                    }
-                    strokeWidth={SW_RING}
-                    bg={t.isDark ? rgba(t.text3, 0.06) : rgba(t.text3, 0.08)}
-                  />
-                  <HabitIcon
-                    name={h.icon}
-                    size={CIRCLE * 0.36}
-                    color={done ? h.color : failed ? "#FF3B30" : t.text2}
-                  />
-                  {h.type === "count" ? (
-                    <Text
-                      style={{
-                        fontSize: CIRCLE * 0.09,
-                        fontWeight: "800",
-                        letterSpacing: -0.3,
-                        marginTop: 2,
-                        color: done ? h.color : t.text3,
+                contextMenu={
+                  contextHabit?.id === h.id ? (
+                    <HabitContextMenu
+                      visible={true}
+                      onClose={() => setContextHabit(null)}
+                      onCustomize={() => {
+                        onEdit(h);
+                        setContextHabit(null);
                       }}
-                    >
-                      {h.counts?.[today()] || 0}/{h.targetCount || 8}
-                    </Text>
-                  ) : (
-                    <Text
-                      style={{
-                        fontSize: CIRCLE * 0.09,
-                        fontWeight: "800",
-                        letterSpacing: -0.3,
-                        marginTop: 2,
-                        color: done ? h.color : failed ? "#FF3B30" : t.text3,
+                      onAnalytics={() => {
+                        onAnalytics();
+                        setContextHabit(null);
                       }}
-                    >
-                      {streak > 0 ? `${streak}d` : "—"}
-                    </Text>
-                  )}
-                  {done && (
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: SW_RING * 0.2,
-                        right: SW_RING * 0.2,
-                        width: CIRCLE * 0.22,
-                        height: CIRCLE * 0.22,
-                        borderRadius: CIRCLE * 0.11,
-                        backgroundColor: h.color,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        elevation: 4,
-                      }}
-                    >
-                      <MaterialCommunityIcons
-                        name="check"
-                        size={CIRCLE * 0.12}
-                        color="#fff"
-                      />
-                    </View>
-                  )}
-                  {failed && (
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: SW_RING * 0.2,
-                        right: SW_RING * 0.2,
-                        width: CIRCLE * 0.22,
-                        height: CIRCLE * 0.22,
-                        borderRadius: CIRCLE * 0.11,
-                        backgroundColor: "#FF3B30",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <MaterialCommunityIcons
-                        name="close"
-                        size={CIRCLE * 0.12}
-                        color="#fff"
-                      />
-                    </View>
-                  )}
-                </View>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    height: LABEL_H,
-                    lineHeight: LABEL_H,
-                    fontSize: 12,
-                    fontWeight: "600",
-                    textAlign: "center",
-                    marginTop: 6,
-                    paddingHorizontal: 4,
-                    color: done ? h.color : failed ? "#FF3B30" : t.text2,
-                  }}
-                >
-                  {h.name}
-                </Text>
-              </TouchableOpacity>
+                      t={t}
+                    />
+                  ) : undefined
+                }
+              />
             );
           })}
         </View>
@@ -2416,12 +2580,12 @@ function JournalScreen({
                   borderRadius: 12,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: delConf ? "#FF3B30" : rgba("#FF3B30", 0.09),
+                  backgroundColor: delConf ? "#E05555" : rgba("#E05555", 0.09),
                 }}
               >
                 <Text
                   style={{
-                    color: delConf ? "#fff" : "#FF3B30",
+                    color: delConf ? "#fff" : "#E05555",
                     fontSize: 12,
                     fontWeight: "700",
                   }}
@@ -2546,7 +2710,7 @@ function AnalyticsScreen({
         ? t.green
         : p > 0
           ? "#FF9500"
-          : rgba("#FF3B30", 0.35);
+          : rgba("#E05555", 0.35);
   const habitStats = habits
     .map((h) => ({
       h,
@@ -2675,7 +2839,7 @@ function AnalyticsScreen({
                   fontSize: 24,
                   letterSpacing: -1.5,
                   color:
-                    wPct >= 80 ? t.green : wPct >= 50 ? "#FF9500" : "#FF5A5A",
+                    wPct >= 80 ? t.green : wPct >= 50 ? "#FF9500" : "#FF9500",
                 }}
               >
                 {wPct}%
@@ -2902,7 +3066,7 @@ function AnalyticsScreen({
                             ? t.green
                             : rate >= 50
                               ? "#FF9500"
-                              : "#FF5A5A",
+                              : "#FF9500",
                         fontWeight: "800",
                         fontSize: 16,
                       }}
@@ -3298,14 +3462,14 @@ function CalendarScreen({
                 const bg = done
                   ? rgba(h.color, 0.09)
                   : failed
-                    ? rgba("#FF3B30", 0.06)
+                    ? rgba("#E05555", 0.06)
                     : t.bg3;
                 const badgeBg = done
                   ? h.color
                   : failed
-                    ? rgba("#FF3B30", 0.15)
+                    ? rgba("#E05555", 0.15)
                     : t.bg2;
-                const badgeCol = done ? "#fff" : failed ? "#FF3B30" : t.text3;
+                const badgeCol = done ? "#fff" : failed ? "#E05555" : t.text3;
                 return (
                   <TouchableOpacity
                     key={h.id}
@@ -3326,7 +3490,7 @@ function CalendarScreen({
                     <HabitIcon
                       name={h.icon}
                       size={20}
-                      color={done ? h.color : failed ? "#FF3B30" : t.text2}
+                      color={done ? h.color : failed ? "#E05555" : t.text2}
                     />
                     <Text
                       style={{
@@ -3368,13 +3532,132 @@ function CalendarScreen({
 }
 
 // ─── PageDots ─────────────────────────────────────────────────────────────────
-const PAGE_ICONS = [
-  { name: "notebook-outline", page: 0 },
-  { name: "home-variant", page: 1 },
-  { name: "calendar-month", page: 2 },
-];
+// ─── HabitContextMenu ─────────────────────────────────────────────────────────
+function HabitContextMenu({
+  visible,
+  onClose,
+  onCustomize,
+  onAnalytics,
+  t,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onCustomize: () => void;
+  onAnalytics: () => void;
+  t: Theme;
+}) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-8)).current;
 
-function PageDots({
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          damping: 18,
+          stiffness: 320,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: -6,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View
+      style={{
+        opacity,
+        transform: [{ translateY }],
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "center",
+        backgroundColor: t.isDark
+          ? "rgba(40,40,40,0.97)"
+          : "rgba(255,255,255,0.97)",
+        borderRadius: 20,
+        paddingHorizontal: 6,
+        paddingVertical: 5,
+        gap: 2,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.18,
+        shadowRadius: 12,
+        elevation: 10,
+        borderWidth: 1,
+        borderColor: t.border,
+        marginTop: 6,
+      }}
+    >
+      <TouchableOpacity
+        onPress={() => {
+          onCustomize();
+          onClose();
+        }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 5,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 14,
+          backgroundColor: rgba(t.accent, 0.1),
+        }}
+      >
+        <MaterialCommunityIcons
+          name="tune-variant"
+          size={14}
+          color={t.accent}
+        />
+        <Text style={{ color: t.accent, fontSize: 12, fontWeight: "700" }}>
+          Edit
+        </Text>
+      </TouchableOpacity>
+      <View style={{ width: 1, height: 16, backgroundColor: t.border }} />
+      <TouchableOpacity
+        onPress={() => {
+          onAnalytics();
+          onClose();
+        }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 5,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 14,
+          backgroundColor: rgba("#BF5AF2", 0.1),
+        }}
+      >
+        <MaterialCommunityIcons name="chart-line" size={14} color="#BF5AF2" />
+        <Text style={{ color: "#BF5AF2", fontSize: 12, fontWeight: "700" }}>
+          Stats
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// ─── PageIndicator ────────────────────────────────────────────────────────────
+function PageIndicator({
   page,
   onPress,
   t,
@@ -3385,6 +3668,8 @@ function PageDots({
 }) {
   const insets = useSafeAreaInsets();
   const displayPage = Math.min(page, 2);
+  const labels = ["Journal", "Home", "Calendar"];
+
   return (
     <View
       style={
@@ -3393,31 +3678,74 @@ function PageDots({
           bottom: 0,
           left: 0,
           right: 0,
-          paddingBottom: insets.bottom + 6,
-          paddingTop: 6,
+          paddingBottom: insets.bottom + 8,
+          paddingTop: 8,
           alignItems: "center",
           pointerEvents: "box-none",
         } as any
       }
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 20 }}>
-        {PAGE_ICONS.map(({ name, page: i }) => {
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          backgroundColor: t.isDark
+            ? "rgba(255,255,255,0.06)"
+            : "rgba(0,0,0,0.06)",
+          paddingHorizontal: 14,
+          paddingVertical: 8,
+          borderRadius: 20,
+        }}
+      >
+        {/* Left arrow — only on calendar (swipe left → home) */}
+        <MaterialCommunityIcons
+          name="chevron-left"
+          size={16}
+          color={displayPage === 2 ? t.accent : "transparent"}
+        />
+
+        {/* Page dots — tappable */}
+        {[0, 1, 2].map((i) => {
           const isActive = displayPage === i;
           return (
             <TouchableOpacity
               key={i}
               onPress={() => onPress(i)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
             >
-              <MaterialCommunityIcons
-                name={name as any}
-                size={isActive ? 24 : 20}
-                color={isActive ? t.accent : rgba(t.text3, 0.55)}
+              <View
+                style={{
+                  width: isActive ? 24 : 7,
+                  height: 7,
+                  borderRadius: 4,
+                  backgroundColor: isActive ? t.accent : rgba(t.text3, 0.4),
+                }}
               />
             </TouchableOpacity>
           );
         })}
+
+        {/* Right arrow — only on journal (swipe right → home) */}
+        <MaterialCommunityIcons
+          name="chevron-right"
+          size={16}
+          color={displayPage === 0 ? t.accent : "transparent"}
+        />
       </View>
+
+      {/* Page label */}
+      <Text
+        style={{
+          color: t.text3,
+          fontSize: 10,
+          fontWeight: "600",
+          marginTop: 4,
+          letterSpacing: 0.5,
+        }}
+      >
+        {labels[displayPage]}
+      </Text>
     </View>
   );
 }
@@ -3434,6 +3762,8 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [celebrate, setCelebrate] = useState<number | null>(null);
+  const { user } = useAuth();
+  useSyncHabits(habits, user);
   const [showAdd, setShowAdd] = useState(false);
   const [editH, setEditH] = useState<Habit | null>(null);
   const [page, setPage] = useState(1);
@@ -3454,29 +3784,29 @@ export default function App() {
     });
   }, []);
 
-  // First-launch nudge — peeks left then right to show pages exist
+  // First-launch nudge from Home — peek left (journal) then right (calendar)
   useEffect(() => {
     if (nudgeDone || !loaded) return;
     const timer = setTimeout(() => {
-      const base = -SW; // home page offset
+      const base = -SW;
       Animated.sequence([
         Animated.timing(translateX, {
-          toValue: base - 44,
+          toValue: base + 48,
           duration: 350,
           useNativeDriver: true,
-        }),
+        }), // peek right→calendar
         Animated.spring(translateX, {
-          toValue: base + 44,
+          toValue: base - 48,
           useNativeDriver: true,
           damping: 14,
           stiffness: 180,
-        }),
+        }), // peek left→journal
         Animated.spring(translateX, {
           toValue: base,
           useNativeDriver: true,
           damping: 14,
-          stiffness: 180,
-        }),
+          stiffness: 220,
+        }), // back to home
       ]).start(() => {
         AsyncStorage.setItem(NUDGE_KEY, "1");
         setNudgeDone(true);
@@ -3498,7 +3828,8 @@ export default function App() {
   const goToPage = useCallback(
     (next: number, animated = true) => {
       // Pages 0-2 are in the swipe row. Page 3 (analytics) slides in separately.
-      if (next < 0 || next > 3 || next === pageRef.current) return;
+      if (next < 0 || next > 4 || next === pageRef.current) return;
+
       if (animated) haptic("light");
       const targetX =
         next <= 2
@@ -3510,6 +3841,11 @@ export default function App() {
         // Analytics: slide in from right over current
         pageRef.current = 3;
         setPage(3);
+        return;
+      }
+      if (next === 4) {
+        pageRef.current = 4;
+        setPage(4);
         return;
       }
       if (next <= 2) {
@@ -3527,53 +3863,109 @@ export default function App() {
     [haptic],
   );
 
-  // Swipe pan — moves the whole strip live
+  // Swipe pan — Home (page 1) is the center. Journal and Calendar always swipe back to Home.
   const swipePan = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponderCapture: (_, gs) =>
         Math.abs(gs.dx) > 10 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.8,
       onPanResponderMove: (_, gs) => {
-        if (pageRef.current === 3) return; // don't swipe on analytics
+        if (pageRef.current === 3) return;
         const base = -pageRef.current * SW;
-        // Resist past edges
         const raw = base + gs.dx;
-        const min = -(PAGE_COUNT - 1) * SW;
-        const max = 0;
-        const bounded = Math.max(min, Math.min(max, raw));
+
+        let bounded: number;
+        if (pageRef.current === 0) {
+          // Journal: only allow rightward swipe toward Home, resist left
+          bounded =
+            gs.dx > 0
+              ? Math.min(raw, -SW) // right: toward Home (page 1 = -SW)
+              : base + gs.dx * 0.15; // left: rubber band
+        } else if (pageRef.current === 2) {
+          // Calendar: only allow leftward swipe toward Home, resist right
+          bounded =
+            gs.dx < 0
+              ? Math.max(raw, -SW) // left: toward Home (page 1 = -SW)
+              : base + gs.dx * 0.15; // right: rubber band
+        } else {
+          // Home: free movement between Journal and Calendar
+          bounded = Math.max(-2 * SW, Math.min(0, raw));
+        }
         translateX.setValue(bounded);
       },
       onPanResponderRelease: (_, gs) => {
         if (pageRef.current === 3) return;
         const THRESH = SW * 0.22;
-        if (gs.dx < -THRESH && pageRef.current < PAGE_COUNT - 1) {
-          const next = pageRef.current + 1;
-          haptic("light");
-          Animated.spring(translateX, {
-            toValue: -next * SW,
-            useNativeDriver: true,
-            damping: 22,
-            stiffness: 260,
-          }).start();
-          pageRef.current = next;
-          setPage(next);
-        } else if (gs.dx > THRESH && pageRef.current > 0) {
-          const next = pageRef.current - 1;
-          haptic("light");
-          Animated.spring(translateX, {
-            toValue: -next * SW,
-            useNativeDriver: true,
-            damping: 22,
-            stiffness: 260,
-          }).start();
-          pageRef.current = next;
-          setPage(next);
+
+        if (pageRef.current === 0) {
+          // Journal: swipe right → Home, anything else snap back
+          if (gs.dx > THRESH) {
+            haptic("light");
+            Animated.spring(translateX, {
+              toValue: -SW,
+              useNativeDriver: true,
+              damping: 22,
+              stiffness: 260,
+            }).start();
+            pageRef.current = 1;
+            setPage(1);
+          } else {
+            Animated.spring(translateX, {
+              toValue: 0,
+              useNativeDriver: true,
+              damping: 20,
+              stiffness: 300,
+            }).start();
+          }
+        } else if (pageRef.current === 2) {
+          // Calendar: swipe left → Home, anything else snap back
+          if (gs.dx < -THRESH) {
+            haptic("light");
+            Animated.spring(translateX, {
+              toValue: -SW,
+              useNativeDriver: true,
+              damping: 22,
+              stiffness: 260,
+            }).start();
+            pageRef.current = 1;
+            setPage(1);
+          } else {
+            Animated.spring(translateX, {
+              toValue: -2 * SW,
+              useNativeDriver: true,
+              damping: 20,
+              stiffness: 300,
+            }).start();
+          }
         } else {
-          Animated.spring(translateX, {
-            toValue: -pageRef.current * SW,
-            useNativeDriver: true,
-            damping: 20,
-            stiffness: 300,
-          }).start();
+          // Home: swipe left → Journal, swipe right → Calendar
+          if (gs.dx > THRESH) {
+            haptic("light");
+            Animated.spring(translateX, {
+              toValue: 0,
+              useNativeDriver: true,
+              damping: 22,
+              stiffness: 260,
+            }).start();
+            pageRef.current = 0;
+            setPage(0);
+          } else if (gs.dx < -THRESH) {
+            haptic("light");
+            Animated.spring(translateX, {
+              toValue: -2 * SW,
+              useNativeDriver: true,
+              damping: 22,
+              stiffness: 260,
+            }).start();
+            pageRef.current = 2;
+            setPage(2);
+          } else {
+            Animated.spring(translateX, {
+              toValue: -SW,
+              useNativeDriver: true,
+              damping: 20,
+              stiffness: 300,
+            }).start();
+          }
         }
       },
       onPanResponderTerminate: () => {
@@ -3723,28 +4115,22 @@ export default function App() {
   return (
     <View
       style={{ flex: 1, backgroundColor: t.bg, overflow: "hidden" }}
-      {...swipePan.panHandlers}
+      {...(page !== 3 ? swipePan.panHandlers : {})}
     >
       {/* 3-page strip: Journal | Home | Calendar */}
       <Animated.View
         style={{
-          flex: 1,
           flexDirection: "row",
           width: SW * 3,
+          height: "100%",
           transform: [{ translateX }],
         }}
       >
-        <View style={{ width: SW, flex: 1 }}>
-          <JournalScreen
-            key="journal"
-            t={t}
-            isDark={isDark}
-            onToggle={toggle}
-          />
+        <View style={{ width: SW, height: "100%" }}>
+          <JournalScreen t={t} isDark={isDark} onToggle={toggle} />
         </View>
-        <View style={{ width: SW, flex: 1 }}>
+        <View style={{ width: SW, height: "100%" }}>
           <HomeScreen
-            key="home"
             t={t}
             isDark={isDark}
             onToggle={toggle}
@@ -3758,11 +4144,11 @@ export default function App() {
             celebrate={celebrate}
             onConfettiDone={() => setConfetti(false)}
             onCelebrateDone={() => setCelebrate(null)}
+            onSettings={() => goToPage(4)}
           />
         </View>
-        <View style={{ width: SW, flex: 1 }}>
+        <View style={{ width: SW, height: "100%" }}>
           <CalendarScreen
-            key="calendar"
             t={t}
             isDark={isDark}
             onToggle={toggle}
@@ -3775,7 +4161,15 @@ export default function App() {
       {/* Analytics: slides in from right as an overlay */}
       {page === 3 && (
         <View
-          style={{ ...StyleSheet.absoluteFillObject, backgroundColor: t.bg }}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: t.bg,
+            zIndex: 100,
+          }}
         >
           <AnalyticsScreen
             t={t}
@@ -3791,7 +4185,7 @@ export default function App() {
         </View>
       )}
 
-      <PageDots page={page} onPress={goToPage} t={t} />
+      <PageIndicator page={page} onPress={goToPage} t={t} />
       <HabitModal
         visible={showAdd}
         onSave={addHabit}

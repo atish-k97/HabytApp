@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "StreakApp",
+    "name": "Habyt",
     "slug": "StreakApp",
     "version": "1.0.0",
     "icon": "./assets/images/icon.png",
@@ -12,13 +12,14 @@
       "supportsTablet": true
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0A0A0A"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.atishk97.streak",
+      "package": "com.atishk97.habyt",
       "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
@@ -39,7 +40,9 @@
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -50,6 +53,7 @@
       "eas": {
         "projectId": "3f093b2d-51a7-4a5a-b028-0ce7e1e8599c"
       }
-    }
+    },
+    "owner": "atishk97"
   }
 }

@@ -92,16 +92,16 @@ export const ICONS = [
   "flower",
 ];
 export const COLORS = [
-  "#FF5A5A",
   "#FF9500",
   "#FFD60A",
   "#30D158",
   "#64D2FF",
   "#0A84FF",
   "#BF5AF2",
-  "#FF375F",
   "#C4622D",
   "#636366",
+  "#4CAF7D",
+  "#FF6B00",
 ];
 export const MILESTONES = [1, 3, 7, 14, 21, 30, 60, 100];
 export const HABIT_CATEGORIES = [
@@ -109,7 +109,7 @@ export const HABIT_CATEGORIES = [
     id: "health",
     label: "Health",
     icon: "heart-pulse",
-    color: "#FF5A5A",
+    color: "#FF9500",
     subs: [
       {
         name: "Drink Water",
@@ -194,7 +194,7 @@ export const HABIT_CATEGORIES = [
       {
         name: "Deep Work",
         icon: "target",
-        color: "#FF5A5A",
+        color: "#FF9500",
         type: "count" as HabitType,
         unit: "hours",
         targetCount: 2,
@@ -220,7 +220,7 @@ export const HABIT_CATEGORIES = [
       {
         name: "Workout",
         icon: "dumbbell",
-        color: "#FF5A5A",
+        color: "#FF9500",
         type: "boolean" as HabitType,
         unit: "",
         targetCount: 1,
@@ -273,7 +273,7 @@ export const HABIT_CATEGORIES = [
       {
         name: "Gratitude",
         icon: "heart",
-        color: "#FF375F",
+        color: "#BF5AF2",
         type: "boolean" as HabitType,
         unit: "",
         targetCount: 1,
@@ -362,7 +362,7 @@ export const HABIT_CATEGORIES = [
       {
         name: "No Gambling",
         icon: "cards-off",
-        color: "#FF5A5A",
+        color: "#FF9500",
         type: "boolean" as HabitType,
         unit: "",
         targetCount: 1,
@@ -784,28 +784,29 @@ export function to12h(t: string): string {
 export const getTheme = (dark: boolean): Theme =>
   dark
     ? {
-        bg: "#141210",
-        bg2: "#1E1A18",
-        bg3: "#2A2420",
-        text: "#F5EDE8",
-        text2: "rgba(245,237,232,0.55)",
-        text3: "rgba(245,237,232,0.28)",
-        border: "rgba(196,98,45,0.12)",
-        accent: "#C4622D",
-        green: "#6DB88A",
-        sheet: "#1E1A18",
+        // True dark — deep black base, layered surfaces, high contrast text
+        bg: "#0D0D0D", // near black — main background
+        bg2: "#1A1A1A", // cards / inputs — clear separation from bg
+        bg3: "#242424", // pressed states / inner surfaces
+        text: "#F0F0F0", // near white — high contrast primary text
+        text2: "rgba(240,240,240,0.6)", // secondary text
+        text3: "rgba(240,240,240,0.35)", // placeholder / hint text
+        border: "rgba(255,255,255,0.07)", // subtle borders
+        accent: "#C4622D", // orange accent — unchanged
+        green: "#4CAF7D", // slightly brighter green for dark bg
+        sheet: "#1A1A1A", // bottom sheet matches card bg
         isDark: true,
       }
     : {
-        bg: "#FDF0EA",
+        bg: "#FFD7B5",
         bg2: "#FFFFFF",
-        bg3: "#F5E6DC",
-        text: "#1C1410",
-        text2: "rgba(28,20,16,0.55)",
-        text3: "rgba(28,20,16,0.32)",
-        border: "rgba(196,98,45,0.15)",
+        bg3: "#FFE8D0",
+        text: "#3D1F00", // warm dark brown — not harsh black
+        text2: "rgba(61,31,0,0.6)",
+        text3: "rgba(61,31,0,0.38)",
+        border: "rgba(61,31,0,0.1)",
         accent: "#C4622D",
-        green: "#4A8C5C",
+        green: "#2E7D32",
         sheet: "#FFFFFF",
         isDark: false,
       };
