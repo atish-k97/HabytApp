@@ -1,17 +1,9 @@
-import { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { User } from "firebase/auth";
 import { useEffect, useRef } from "react";
 import { syncHabitsToFirestore } from "./firebase";
 import { Habit } from "./shared";
 
-/**
- * Call this in your Today screen (or wherever habits state lives).
- * Whenever habits change AND a user is logged in, syncs to Firestore.
- * Skips the initial mount to avoid unnecessary writes on app open.
- */
-export const useSyncHabits = (
-  habits: Habit[],
-  user: FirebaseAuthTypes.User | null,
-) => {
+export const useSyncHabits = (habits: Habit[], user: User | null) => {
   const isFirstRun = useRef(true);
 
   useEffect(() => {
