@@ -1,4 +1,4 @@
-package com.anonymous.StreakApp
+package com.atishk97.habyt
 
 import android.app.Application
 import android.content.res.Configuration

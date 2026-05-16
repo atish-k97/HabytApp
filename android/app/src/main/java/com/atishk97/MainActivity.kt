@@ -1,4 +1,4 @@
-package com.anonymous.StreakApp
+package com.atishk97.habyt
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
